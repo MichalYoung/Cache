@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <srpc/srpc.h>
 #include <adts/hashmap.h>
+#include <stdarg.h>
 
 #include "cacheconnect.h"
 
@@ -50,6 +51,18 @@ struct cache_response_t {
     char** headers;
     char** data;
 };
+
+#define DBG 1
+static void dbmsg(char *msg, ...) {
+    if (DBG) {
+        fprintf(stderr, "\n==>");
+        va_list args;
+        va_start(args, msg);
+        vfprintf(stderr, msg, args);
+        va_end(args);
+        fprintf(stderr, "<==\n");
+    }
+}
 
 /// Returns the pointer to the next char in p to scan from
 static const char *separator = "<|>"; /* separator between packed fields */
@@ -227,27 +240,27 @@ int init_cache(char* host, unsigned short port, char* servicename) {
     int err;
     err = !rpc_init(0);
     if(err) {
-        printf("rpc_init failed\n");
+        printf("cacheconnect: rpc_init failed\n");
         return 1;
     }
     service_functions = hm_create(25L, 0.75);
 
-    printf("connection to %s:%d.%s...\n",host,port,servicename);
+    printf("cacheconnect: connection to %s:%d.%s...\n",host,port,servicename);
     rpc = rpc_connect(host, port, servicename, 1l);
     if(rpc==0) {
-        printf("rpc_connect failed\n");
+        printf("cacheconnect: rpc_connect failed\n");
         return 1;
     }
 
     rps = rpc_offer(MY_SERVICE_NAME);
     if(!rps) {
-        printf("Offer failed!\n");
+        printf("cacheconnect: Offer failed!\n");
         return 1;
     }
     rpc_details(lhost, &lport);
     err = pthread_create(&serviceThread, NULL, (void*)_service_handler, NULL);
     if(err) {
-        printf("could not create the thread to handle events\n");
+        printf("cacheconnect: could not create the thread to handle events\n");
         return 1;
     }
     return 0;
@@ -295,16 +308,28 @@ int install_file_automata(char* fname, AutomataHandler_t ahandle) {
     FILE* f;
     int rlen;
 
+    dbmsg("cacheconnect: attempting to open automaton file |%s|", fname);
+
+
     struct stat st;
     stat(fname, &st);
     int buflen=st.st_size;
     char* buf=(char*)malloc(sizeof(char)*(buflen+1));
+    strncpy(buf, "Nothing here!", buflen);
 
+    dbmsg("About to open %s", fname);
     f = fopen(fname,"r");
+    dbmsg("Opened");
+    if (f==NULL) {
+        dbmsg("Failed to open file");
+        return 1;
+    }
     rlen = fread(buf, buflen, buflen, f);
     if(rlen != buflen) {
-        fprintf(stderr,"Problem reading the automata from disk.\n");
-        return 1;
+        dbmsg("Problem reading the automata from disk, obtained %d bytes, expecting %d.", rlen, buflen);
+        dbmsg("But maybe this is ok?");
+        dbmsg("Buffer content: %s", buf);
+        // return 1;  // This error check appears to be wrong; fread returns number of *chunks*
     }
     buf[buflen]='\0';
     /*strip whitespace since it is meaningful to the protocol*/
@@ -312,7 +337,9 @@ int install_file_automata(char* fname, AutomataHandler_t ahandle) {
     for(i=0;i<buflen;i++) {
         if(buf[i]=='\n') { buf[i]=' '; }
     }
+    dbmsg("Ready to install automaton");
     result = install_automata(buf, ahandle);
+    dbmsg("Installed");
     free(buf);
 
     return result;

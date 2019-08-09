@@ -63,7 +63,7 @@
 static InstructionEntry initbuf[NPROG];
 static InstructionEntry behavbuf[NPROG];
 
-int iflog = 0;
+int iflog = 0;    /* Log instruction execution to stderr */
 int initSize, behavSize;
 InstructionEntry *progp, *startp;
 InstructionEntry *initialization = initbuf;
@@ -214,14 +214,27 @@ void execute(MachineContext *mc, InstructionEntry *p) {
     }
 }
 
-static void printIE(InstructionEntry *p, FILE *fd) {
+static void printIE(InstructionEntry *p, ArrayList *i2v, FILE *fd) {
+    char* ident;
+    long long int var_slot;
     switch(p->type) {
     case FUNC:
-        fprintf(fd, "Function pointer (%s) %p\n", p->label, p->u.op);
+        fprintf(fd, "\t :%s (%p)\n", p->label, p->u.op);
         break;
     case DATA:
-        fprintf(fd, "Immediate data (%s), ", p->label);
-        dumpDataStackEntry(&(p->u.immediate), 1);
+        /* Special casing based on label is inadequate --- there are multiple
+         * labels depending on context.  We need to do it based on prior
+         * instruction slot being varpush.
+         */
+        if (strcmp(p->label, "variable name") == 0 || strcmp(p->label, "variable") == 0 ) {
+            /* Special case for variable indexes: What is it's name? */
+            var_slot = p->u.immediate.value.int_v;
+            (void) al_get(i2v, var_slot, (void **)&ident);
+            fprintf(fd, "\t [%lld] => %s\n", var_slot, ident);
+        } else {
+            fprintf(fd, "\t data (%s), ", p->label);
+            dumpDataStackEntry(&(p->u.immediate), 1);
+        }
         break;
     case PNTR:
         fprintf(fd, "Offset from PC (%s), %d\n", p->label, p->u.offset);
@@ -229,20 +242,21 @@ static void printIE(InstructionEntry *p, FILE *fd) {
     }
 }
 
-static void dumpProgram(InstructionEntry *p) {
-    if (! iflog)
-        return;
-    while (!(p->type == FUNC && p->u.op == STOP)) {
-        printIE(p, stderr);
-        p++;
-    }
-}
 
-void dumpProgramBlock(InstructionEntry *p, int n) {
+//static void dumpProgram(InstructionEntry *p) {
+//    if (! iflog)
+//        return;
+//    while (!(p->type == FUNC && p->u.op == STOP)) {
+//        printIE(p, stderr);
+//        p++;
+//    }
+//}
+
+void dumpProgramBlock(InstructionEntry *p, int n, ArrayList *i2v) {
     int savediflog = iflog;
     iflog = 1;
     while (n > 0) {
-        printIE(p, stderr);
+        printIE(p, i2v, stderr);
         p++;
         n--;
     }
@@ -304,9 +318,9 @@ void dumpCompilationResults(unsigned long id, ArrayList *v, ArrayList *i2v,
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "====== initialization instructions\n");
-    dumpProgramBlock(init, initSize);
+    dumpProgramBlock(init, initSize, i2v);  /* MY added variable name table */
     fprintf(stderr, "====== behavior instructions\n");
-    dumpProgramBlock(behav, behavSize);
+    dumpProgramBlock(behav, behavSize, i2v);
     fprintf(stderr, "=== End of comp results for automaton %08lx\n", id);
 }
 
@@ -1075,10 +1089,10 @@ void whilecode(MachineContext *mc) {
     InstructionEntry *condition = mc->pc + 2;
     if (iflog) logit("whilecode called\n", mc->au);
 
-    if (iflog) logit("=====> Dumping condition\n", mc->au);
-    dumpProgram(condition);
-    if (iflog) logit("=====> Dumping body\n", mc->au);
-    dumpProgram(body);
+    // if (iflog) logit("=====> Dumping condition\n", mc->au);
+    // dumpProgram(condition);
+    // if (iflog) logit("=====> Dumping body\n", mc->au);
+    // dumpProgram(body);
     execute(mc, condition);
     d = pop(mc->stack);
     if (iflog)
@@ -1108,15 +1122,15 @@ void ifcode(MachineContext *mc) {
         fprintf(stderr, "   thenpart  address %p\n", thenpart);
         fprintf(stderr, "   elsepart  address %p\n", elsepart);
         fprintf(stderr, "   nextstmt  address %p\n", nextStmt);
-        logit("=====> Dumping condition\n", mc->au);
-        dumpProgram(condition);
-        logit("=====> Dumping thenpart\n", mc->au);
-        dumpProgram(thenpart);
-        if(elsepart != base) {
-            logit("=====> Dumping elsepart\n", mc->au);
-            dumpProgram(elsepart);
-        } else
-            logit("=====> No elsepart to if\n", mc->au);
+        // logit("=====> Dumping condition\n", mc->au);
+        // dumpProgram(condition);
+        // logit("=====> Dumping thenpart\n", mc->au);
+        // dumpProgram(thenpart);
+        // if(elsepart != base) {
+        //    logit("=====> Dumping elsepart\n", mc->au);
+        //    dumpProgram(elsepart);
+        //} else
+        //    logit("=====> No elsepart to if\n", mc->au);
     }
     execute(mc, condition);
     d = pop(mc->stack);

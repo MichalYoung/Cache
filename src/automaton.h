@@ -37,6 +37,7 @@
 
 #include "event.h"
 #include "srpc/srpc.h"
+#include <stdio.h>
 
 typedef struct automaton Automaton;
 
@@ -47,5 +48,7 @@ void          au_publish(unsigned long id, Event *event);
 unsigned long au_id(Automaton *au);
 Automaton     *au_au(unsigned long id);
 RpcConnection au_rpc(Automaton *au);
+
+void disassemble(Automaton *au, FILE *fd);  // MY 2019-08
 
 #endif /* _AUTOMATON_H_ */

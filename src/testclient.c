@@ -46,12 +46,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <stdarg.h>
 
 #include "cacheconnect.h"
 
 #define USAGE "./testclient [-f fifo] [-h host] [-p port] [-l packets]"
 #define MAX_LINE 4096
 #define MAX_INSERTS 500
+
+#define DBG 1
+static void dbmsg(char *msg, ...) {
+    if (DBG) {
+        fprintf(stderr, "\n==>");
+        va_list args;
+        va_start(args, msg);
+        vfprintf(stderr, msg, args);
+        va_end(args);
+        fprintf(stderr, "<==\n");
+    }
+}
 
 static char bf[MAX_LINE]; /* buffer to hold pushed-back line */
 static int pback = 0; /* if bf holds a pushed-back line */
@@ -93,10 +106,13 @@ int main(int argc, char *argv[]) {
     char *service;
     CacheResponse cr;
 
+    dbmsg("testclient connecting to service");
+
     connect_env(&host, &port, &service);
     if(service == NULL) {
         service = "HWDB";
     }
+    dbmsg("testclient: Service is '%s'", service);
     if(host == NULL) {
         host = HWDB_SERVER_ADDR;
     }
@@ -104,6 +120,7 @@ int main(int argc, char *argv[]) {
         port = HWDB_SERVER_PORT;
     }
 
+    dbmsg("testclient connected");
     log = 1;
     for (i = 1; i < argc; ) {
         if ((j = i + 1) == argc) {
@@ -138,6 +155,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     gettimeofday(&start, NULL);
+
+    dbmsg("testclient starting fetch loop");
+
     while (fetchline(inb) != NULL) {
         if (strcmp(inb, "\n") == 0) /* ignore blank lines */
             continue;
@@ -154,6 +174,8 @@ int main(int argc, char *argv[]) {
             }
         } else if (inb[0]=='R') {
             if(inb[1]=='F') {
+                dbmsg("testclient: recognized command to install automaton '%s'", inb);
+                fprintf(stderr, "testclient: automaton to install will be '%s'\n", inb+2);
                 err=install_file_automata(inb+2, dumpToStdout);
             } else {
                 err=install_automata(inb+1, dumpToStdout);

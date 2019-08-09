@@ -87,7 +87,7 @@ void warning(char *b, int lineno, char *s1, char *s2);
 void execerror(int lineno, char *s1, char *s2);
 void comperror(char *s1, char *s2);
 void dumpMap(DataStackEntry *d);
-void dumpProgramBlock(InstructionEntry *i, int size);
+void dumpProgramBlock(InstructionEntry *i, int size, ArrayList *i2v);  /* MY added variable name table */
 void dumpDataStackEntry (DataStackEntry *d, int verbose);
 void printDSE(DataStackEntry *d, FILE *fd);
 void freeDSE(DataStackEntry *d);

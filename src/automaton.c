@@ -52,6 +52,7 @@
 #include <time.h>
 #include "srpc/srpc.h"
 #include "logdefs.h"
+#include "disassemble.h"
 
 #define DEFAULT_HASH_TABLE_SIZE 20
 
@@ -322,7 +323,7 @@ Automaton *au_create(char *program, RpcConnection rpc, char *ebuf) {
                     au->behav = (InstructionEntry *)malloc(N);
                     memcpy(au->behav, behavior, N);
                     au->variables = variables;
-		    au->index2vars = index2vars;
+		            au->index2vars = index2vars;
                     au->topics = topics;
                     sprintf(buf, "%08lx", au->id);
                     (void) tshm_put(automatons, buf, au, &dummy);
@@ -341,6 +342,14 @@ Automaton *au_create(char *program, RpcConnection rpc, char *ebuf) {
                     pthread_mutex_unlock(&(au->lock));
                     pthread_create(&pthr, NULL, thread_func, (void *)au);
                     pthread_mutex_unlock(&compile_lock);
+                    /* MY July 2019: Dumping byte code .
+                     * We want to call:
+                     * void dumpCompilationResults(unsigned long id, ArrayList *v, ArrayList *i2v,
+                                 InstructionEntry *init, int initSize,
+                                 InstructionEntry *behav, int behavSize)
+                    */
+                    disassemble(au, stderr);
+                    /* End debugging code */
                     return au;
                 }
             } else {
@@ -407,4 +416,18 @@ Automaton *au_au(unsigned long id) {
 
 RpcConnection au_rpc(Automaton *au) {
     return au->rpc;
+}
+
+/*
+ * Disassembly is in disassemble.c, but here in automaton.c
+ * is where we know the structure of an automaton struct.
+ */
+
+void disassemble(Automaton *au, FILE *fd) {
+    do_disassemble(
+            au->id, au->variables, au->index2vars,
+            au->init, initSize,
+            au->behav, behavSize,
+            fd
+    );
 }

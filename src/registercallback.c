@@ -185,6 +185,7 @@ int main(int argc, char *argv[]) {
     delay = DELAY;
     for (i = 1; i < argc; ) {
         if ((j = i + 1) == argc) {
+            /* -x at end of argument list, no value following */
             fprintf(stderr, "usage: %s\n", USAGE);
             exit(1);
         }
