@@ -43,7 +43,7 @@
 extern int yylex();
 
 void yyerror(const char *str) {
-    fprintf(stderr,"error: %s\n",str);
+    fprintf(stderr,"error in SQL statement: %s\n",str);
 }
 
 int yywrap() {
