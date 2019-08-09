@@ -86,6 +86,10 @@ char errbuf[1024];
     unsigned long long tstampv;
     InstructionEntry *inst;
 }
+
+%define parse.error verbose
+%define parse.trace
+
 %token	<strv>	VAR FIELD STRING FUNCTION PROCEDURE PARAMTYPE /* tokens that malloc */
 %token	<intv>	SUBSCRIBE TO WHILE IF ELSE INITIALIZATION BEHAVIOR MAP PRINT
 %token	<intv>	BOOLEAN INTEGER ROWS SECS WINDOW DESTROY NULLVAL
