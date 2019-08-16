@@ -8,6 +8,8 @@
 //
 
 #include "disassemble.h"
+#include "adts/hashmap.h"
+#include "adts/iterator.h"
 #include <string.h>
 
 static void print_instruction(InstructionEntry *p, ArrayList *i2v, FILE *fd) {
@@ -46,14 +48,8 @@ static void print_block(InstructionEntry *p, int n, ArrayList *i2v, FILE *fd) {
     }
 }
 
-void do_disassemble(unsigned long id, ArrayList *v, ArrayList *i2v,
-                            InstructionEntry *init, int initSize,
-                            InstructionEntry *behav, int behavSize, 
-                            FILE *fd) {
+static void print_variables(ArrayList *v, ArrayList *i2v, FILE *fd) {
     long i, n;
-
-    fprintf(fd, "=== Compilation results for automaton %08lx\n", id);
-    fprintf(fd, "====== variables\n");
     n = al_size(v);
     for (i = 0; i < n; i++) {
         DataStackEntry *d;
@@ -101,6 +97,40 @@ void do_disassemble(unsigned long id, ArrayList *v, ArrayList *i2v,
         }
         fprintf(fd, "\n");
     }
+}
+
+void print_topics(HashMap *topics, ArrayList *i2v, FILE *fd) {
+    Iterator *it = hm_it_create(topics);
+    if (!it) {
+        fprintf(fd, "No topics\n");
+        return;
+    }
+    while (it_hasNext(it)) {
+        HMEntry *hme;
+        char *key = "Has not been assigned";
+        long var_index = 42L;
+        char *var_name = "Has not been assigned";
+        (void) it_next(it, (void **)&hme);
+        key = hmentry_key(hme);
+        var_index = (long) hmentry_value(hme);
+        al_get(i2v, var_index, (void **)&var_name);
+        fprintf(fd, "%s => %s [slot %d]\n", key, var_name, var_index);
+        // top_subscribe(hmentry_key(hme), au->id);
+    }
+    it_destroy(it);
+}
+
+void do_disassemble(unsigned long id, HashMap *topics,
+                            ArrayList *v, ArrayList *i2v,
+                            InstructionEntry *init, int initSize,
+                            InstructionEntry *behav, int behavSize, 
+                            FILE *fd) {
+
+    fprintf(fd, "=== Compilation results for automaton %08lx\n", id);
+    fprintf(fd, "====== variables\n");
+    print_variables(v, i2v, fd);
+    fprintf(fd, "=== Subscribed to topics ===\n");
+    print_topics(topics, i2v, fd);
     fprintf(fd, "====== initialization instructions\n");
     print_block(init, initSize, i2v, fd);  /* MY added variable name table */
     fprintf(fd, "====== behavior instructions\n");

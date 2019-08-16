@@ -21,7 +21,8 @@
 /* The actual disassembly depends primarily on code.h; normally
  * called from 'disassemble' in automaton.c.
  */
-void do_disassemble(unsigned long id, ArrayList *v, ArrayList *i2v,
+void do_disassemble(unsigned long id, HashMap *topics,
+                            ArrayList *v, ArrayList *i2v,
                             InstructionEntry *init, int initSize,
                             InstructionEntry *behav, int behavSize,
                             FILE *fd);

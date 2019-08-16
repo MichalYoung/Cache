@@ -57,17 +57,20 @@
 #define DEFAULT_HASH_TABLE_SIZE 20
 
 struct automaton {
+    /* Run-time state */
     short must_exit;
     short has_exited;
     unsigned long id;
     pthread_mutex_t lock;
     pthread_cond_t cond;
     LinkedList *events;
+    /* Built at compile-time */
     HashMap *topics;
     ArrayList *variables;
     ArrayList *index2vars;
     InstructionEntry *init;
     InstructionEntry *behav;
+    /* Connection set here after compiling */
     RpcConnection rpc;
 };
 
@@ -425,7 +428,7 @@ RpcConnection au_rpc(Automaton *au) {
 
 void disassemble(Automaton *au, FILE *fd) {
     do_disassemble(
-            au->id, au->variables, au->index2vars,
+            au->id, au->topics, au->variables, au->index2vars,
             au->init, initSize,
             au->behav, behavSize,
             fd
