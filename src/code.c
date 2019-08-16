@@ -242,88 +242,6 @@ static void printIE(InstructionEntry *p, ArrayList *i2v, FILE *fd) {
     }
 }
 
-
-//static void dumpProgram(InstructionEntry *p) {
-//    if (! iflog)
-//        return;
-//    while (!(p->type == FUNC && p->u.op == STOP)) {
-//        printIE(p, stderr);
-//        p++;
-//    }
-//}
-
-void dumpProgramBlock(InstructionEntry *p, int n, ArrayList *i2v) {
-    int savediflog = iflog;
-    iflog = 1;
-    while (n > 0) {
-        printIE(p, i2v, stderr);
-        p++;
-        n--;
-    }
-    iflog = savediflog;
-}
-
-void dumpCompilationResults(unsigned long id, ArrayList *v, ArrayList *i2v,
-                            InstructionEntry *init, int initSize,
-                            InstructionEntry *behav, int behavSize) {
-    long i, n;
-
-    fprintf(stderr, "=== Compilation results for automaton %08lx\n", id);
-    fprintf(stderr, "====== variables\n");
-    n = al_size(v);
-    for (i = 0; i < n; i++) {
-        DataStackEntry *d;
-        char *s;
-        (void) al_get(v, i, (void **)&d);
-        (void) al_get(i2v, i, (void **)&s);
-        fprintf(stderr, "%s: ", s);
-        switch(d->type) {
-        case dBOOLEAN:
-            fprintf(stderr, "bool");
-            break;
-        case dINTEGER:
-            fprintf(stderr, "int");
-            break;
-        case dDOUBLE:
-            fprintf(stderr, "real");
-            break;
-        case dTSTAMP:
-            fprintf(stderr, "tstamp");
-            break;
-        case dSTRING:
-            fprintf(stderr, "string");
-            break;
-        case dEVENT:
-            fprintf(stderr, "tuple");
-            break;
-        case dMAP:
-            fprintf(stderr, "map");
-            break;
-        case dIDENT:
-            fprintf(stderr, "identifier");
-            break;
-        case dWINDOW:
-            fprintf(stderr, "window");
-            break;
-        case dITERATOR:
-            fprintf(stderr, "iterator");
-            break;
-        case dSEQUENCE:
-            fprintf(stderr, "sequence");
-            break;
-        case dPTABLE:
-            fprintf(stderr, "PTable");
-            break;
-        }
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "====== initialization instructions\n");
-    dumpProgramBlock(init, initSize, i2v);  /* MY added variable name table */
-    fprintf(stderr, "====== behavior instructions\n");
-    dumpProgramBlock(behav, behavSize, i2v);
-    fprintf(stderr, "=== End of comp results for automaton %08lx\n", id);
-}
-
 static void logit(char *s, Automaton *au) {
     fprintf(stderr, "%08lx: %s", au_id(au), s);
 }
@@ -1088,11 +1006,6 @@ void whilecode(MachineContext *mc) {
     InstructionEntry *nextStmt = base + (mc->pc+1)->u.offset;
     InstructionEntry *condition = mc->pc + 2;
     if (iflog) logit("whilecode called\n", mc->au);
-
-    // if (iflog) logit("=====> Dumping condition\n", mc->au);
-    // dumpProgram(condition);
-    // if (iflog) logit("=====> Dumping body\n", mc->au);
-    // dumpProgram(body);
     execute(mc, condition);
     d = pop(mc->stack);
     if (iflog)

@@ -91,11 +91,12 @@ void dumpProgramBlock(InstructionEntry *i, int size, ArrayList *i2v);  /* MY add
 void dumpDataStackEntry (DataStackEntry *d, int verbose);
 void printDSE(DataStackEntry *d, FILE *fd);
 void freeDSE(DataStackEntry *d);
-void dumpCompilationResults(unsigned long id,
-                            ArrayList *v, ArrayList *i2v,
-                            InstructionEntry *init, int initSize,
-                            InstructionEntry *behav, int behavSize);
 
 extern InstructionEntry *initialization, *behavior;
+
+/* dumpCompilationResults has been replaced by
+ *   disassemble in automata.h
+ *   do_disassemble in disassemble.h
+ */
 
 #endif /* _CODE_H_ */
