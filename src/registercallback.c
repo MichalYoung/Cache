@@ -58,8 +58,26 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+/* Added for reading automata from file system */
+#include <sys/stat.h>
+/* Added for dbmsg */
+#include <stdarg.h>
 
-#define USAGE "./registercallback [-h host] [-p port] [-s service] [-t minutes] -a automaton"
+
+
+#define USAGE "./registercallback [-h host] [-p port] [-s service] [-t minutes] -a automaton | -f path"
+
+#define DBG 1
+static void dbmsg(char *msg, ...) {
+    if (DBG) {
+        fprintf(stderr, "\n==>");
+        va_list args;
+        va_start(args, msg);
+        vfprintf(stderr, msg, args);
+        va_end(args);
+        fprintf(stderr, "<==\n");
+    }
+}
 
 /*
  * global data shared by main thread and handler thread
@@ -155,6 +173,58 @@ static void print_cmd(char *str) {
 
 static struct timespec time_delay = {0, 0};
 
+/* Automaton source code from file path.   Partially from
+ * cacheconnect.c :  install_file_automata, adapted by MY.
+ *
+ * Note this mallocs a buffer for the automaton and never
+ * returns it until the main program executes.  We could clean it
+ * up after automaton is transmitted to server and registered, if
+ * needed.
+ *
+ * When automaton is on command line, newlines are scrubbed with lftocr.
+ * Is that necessary when automaton is loaded from file?  And should we
+ * be escaping quotes?  First attempt without it.
+ */
+
+char *from_file(char *path) {
+    struct stat st;
+    int stat_err = stat(path, &st);
+    if (stat_err) {
+        fprintf(stderr, "Failure checking file path '%s'\n", path);
+        exit(1);
+    }
+    int buflen=st.st_size;
+    char* buf=(char*)malloc(sizeof(char)*(buflen+1));
+    // dbmsg("About to open %s", path);
+    FILE* f = fopen(path,"r");
+    // dbmsg("Opened");
+    if (f==NULL) {
+        fprintf(stderr, "Failed to open file %s\n", path);
+        exit(1);
+    }
+    int rlen = fread(buf, buflen, buflen, f);
+    // dbmsg("Read %d chunks\n", rlen);
+    buf[buflen]='\0';   // Because fread doesn't add it.
+    if (strlen(buf) != buflen) {
+        fprintf(stderr, "Expecting %s length to be %d, got %lu\n", path, buflen, strlen(buf));
+        exit(1);
+    }
+    int i;
+    /*strip linefeeds since they are meaningful to the protocol*/
+    for(i=0;i<buflen;i++) {
+        if(buf[i]=='\n') { buf[i]='\r'; }
+        // Note difference from lftocr:  We leave \r
+        // intact, lftocr elides them.  If original file
+        // contains \r\n combinations as in Windows, we will
+        // have extra newlines in file reconstructed on the
+        // server side.
+    }
+
+    return buf;
+
+}
+
+
 /*
  *   creates a service named Handler
  *   spins off handler thread
@@ -199,6 +269,8 @@ int main(int argc, char *argv[]) {
             service = argv[j];
         else if (strcmp(argv[i], "-a") == 0)
             automaton = argv[j];
+        else if (strcmp(argv[i], "-f") == 0)
+            automaton = from_file(argv[j]);
         else {
             fprintf(stderr, "Unknown flag: %s %s\n", argv[i], argv[j]);
         }
