@@ -35,7 +35,12 @@ static void print_instruction(InstructionEntry *p, ArrayList *i2v, FILE *fd) {
             }
             break;
         case PNTR:
-            fprintf(fd, "Offset from PC (%s), %d\n", p->label, p->u.offset);
+            /*  The PNTR type is an offset from the program counter.  While this
+             * could be done with integer DATA, the ifcode and whilecode functions
+             * expect to find the offset in p->u.offset rather than in
+             * p->u.immediate.value.int_v.
+             */
+            fprintf(fd, "\t %d+PC (%s)\n", p->u.offset, p->label);
             break;
     }
 }
