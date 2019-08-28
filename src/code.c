@@ -269,7 +269,7 @@ void add(MachineContext *mc) {
     if (iflog) logit("add called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v += d2.value.int_v;
@@ -291,7 +291,7 @@ void subtract(MachineContext *mc) {
     if (iflog) logit("subtract called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v -= d2.value.int_v;
@@ -313,7 +313,7 @@ void multiply(MachineContext *mc) {
     if (iflog) logit("multiply called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v *= d2.value.int_v;
@@ -335,7 +335,7 @@ void divide(MachineContext *mc) {
     if (iflog) logit("divide called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v /= d2.value.int_v;
@@ -357,7 +357,7 @@ void modulo(MachineContext *mc) {
     if (iflog) logit("modulo called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v %= d2.value.int_v;
@@ -376,7 +376,7 @@ void bitOr(MachineContext *mc) {
     if (iflog) logit("bitOr called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v |= d2.value.int_v;
@@ -395,7 +395,7 @@ void bitAnd(MachineContext *mc) {
     if (iflog) logit("bitAnd called\n", mc->au);
     d2 = pop(mc->stack);
     d1 = pop(mc->stack);
-    if ((d1.type == d2.type)) {
+    if (d1.type == d2.type) {
         switch(d1.type) {
         case dINTEGER:
             d1.value.int_v &= d2.value.int_v;
@@ -955,6 +955,8 @@ void ne(MachineContext *mc) {
     push(mc->stack, d1);
 }
 
+// Note 'and' and 'or' are not short-circuit.  Should we change that?
+
 void and(MachineContext *mc) {
     DataStackEntry d1, d2;
     if (iflog) logit("and called\n", mc->au);
@@ -1022,11 +1024,11 @@ void whilecode(MachineContext *mc) {
 
 void ifcode(MachineContext *mc) {
     DataStackEntry d;
-    InstructionEntry *base = mc->pc - 1;
+    InstructionEntry *base = mc->pc - 1;     // Location of the 'ifcode' instruction
     InstructionEntry *thenpart = base + mc->pc->u.offset;
     InstructionEntry *elsepart = base + (mc->pc+1)->u.offset;
     InstructionEntry *nextStmt = base + (mc->pc+2)->u.offset;
-    InstructionEntry *condition = mc->pc + 3;
+    InstructionEntry *condition = mc->pc + 3;  // Four instructions forward; pc already incremented
 
     if (iflog) {
         logit("ifcode called\n", mc->au);
@@ -1049,6 +1051,8 @@ void ifcode(MachineContext *mc) {
     d = pop(mc->stack);
     if (iflog)
         fprintf(stderr, "%08lx: condition is %d\n", au_id(mc->au), d.value.bool_v);
+    // Each block ends with a 'stop' instruction, so executing thenpart or
+    // elsepart is performed as a recursive function call.
     if (d.value.bool_v)
         execute(mc, thenpart);
     else if (elsepart != base)
