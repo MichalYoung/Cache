@@ -87,6 +87,7 @@ Rtab *hwdb_showtables(void);
 int hwdb_register(sqlregister *regist);
 int hwdb_unregister(sqlunregister *unregist);
 int hwdb_update(sqlupdate *update);
+int hwdb_delete(sqldelete *delete);
 //void hwdb_publish(char *tablename);
 int hwdb_send_event(Automaton *au, char *buf, int ifdisconnect);
 #ifdef HWDB_PUBLISH_IN_BACKGROUND

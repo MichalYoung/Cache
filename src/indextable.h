@@ -47,6 +47,7 @@ int itab_create_table(Indextable *itab, char *tablename, int ncols,
                       char **colnames, int **coltypes, short tabletype, short primary_column);
 
 int itab_update_table(Indextable *itab, sqlupdate *update);
+int itab_delete_rows(Indextable *itab, sqldelete *delete);
 
 int itab_is_compatible(Indextable *itab, char *tablename,
                        int ncols, int **coltypes);
