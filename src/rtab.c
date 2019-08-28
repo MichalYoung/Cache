@@ -664,7 +664,10 @@ char *rtab_process_avg(Rtab *results, int col) {
                 x = (double)strtoll(row[col], NULL, 10);
             else
                 x = atof(row[col]);
-            average = (x + (double)count * average)/(double)(++count);
+            // Was: average = (x + (double)count * average)/(double)(++count);
+            // Warning: left operands of / are not sequenced
+            average = (x + (double)count * average)/(double)(count + 1);
+            ++count;
         }
     }
     if (isint)
