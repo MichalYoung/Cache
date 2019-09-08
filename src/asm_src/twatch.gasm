@@ -1,0 +1,10 @@
+;
+; GAPL (Cache) assembly language version of twatch.a
+;
+:var t timestamp
+:subscribe t Timer
+;  FIXME add init and behavior sections
+;  currently just behavior
+varpush t eval
+proc  send 1
+stop
